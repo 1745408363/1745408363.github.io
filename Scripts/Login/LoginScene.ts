@@ -42,7 +42,13 @@ export class LoginScene extends Component {
     if (user) {
       // 登录成功：存储当前用户（全局可用），跳转菜品页
       localStorage.setItem("currentUser", JSON.stringify(user));
-      SceneManager.loadScene("DishListScene");
+      // 新增角色判断：管理员跳转到统计页，其他角色跳转到菜品页
+    if (user.role === "admin") {
+      SceneManager.loadScene("AdminStatsScene"); // 管理员默认跳转到统计页
+    } else {
+      SceneManager.loadScene("DishListScene"); // 食客/厨师跳转到菜品页
+    }
+      // SceneManager.loadScene("DishListScene");
     } else {
       alert("手机号或密码错误，请重新输入！");
     }
@@ -99,4 +105,12 @@ export class LoginScene extends Component {
     alert("注册成功！请登录~");
     this.registerModal.active = false; // 关闭弹窗
   }
+
+
+  onClearAllDataBtnClick() {
+  if (confirm("确定要删除所有数据吗？此操作不可恢复！")) {
+    DataManager.getInstance().clearAllData();
+   // SceneManager.loadScene("LoginScene"); // 清空后跳登录页
+  }
+}
 }

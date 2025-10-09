@@ -123,4 +123,8 @@ export class DishListScene extends Component {
   onKitchenBtnClick() {
     SceneManager.loadScene("KitchenScene");
   }
+
+  onHistoryBtnClick() {
+    SceneManager.loadScene("OrderHistoryScene");
+  }
 }

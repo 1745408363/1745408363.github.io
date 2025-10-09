@@ -6,7 +6,11 @@ const { ccclass } = _decorator;
 const TABLES = {
   USER: "user_table",
   DISH: "dish_table",
-  ORDER: "order_table"
+  ORDER: "order_table",
+  REVIEW: "review_table",
+  QUALIFICATION: "qualification_table",
+  PRIVATE_SERVICE: "private_service_table"
+
 };
 
 @ccclass('DataManager')
@@ -22,12 +26,19 @@ export class DataManager extends Component {
     }
     return this.instance;
   }
-
+  public clearAllData() {
+  // 直接清空所有本地存储数据（包括所有表和临时数据）
+  localStorage.clear();
+  // 重新初始化表结构（保留默认管理员和菜品数据）
+  
+  alert("所有数据已清空");
+  }
   // 初始化所有表：无数据则创建空表/默认数据
   private initTables() {
-    // 1. 初始化用户表（空表）
+    // 1. 初始化用户表（初始化管理员表）
     if (!localStorage.getItem(TABLES.USER)) {
-      localStorage.setItem(TABLES.USER, JSON.stringify([]));
+      const admin =[{ id: "u_admin_001", phone: "13800000000", password: "admin123", role: "admin", name: "管理员" }];
+      localStorage.setItem(TABLES.USER, JSON.stringify(admin));
     }
 
     // 2. 初始化菜品表（默认3个菜品，对应概要设计“菜品浏览模块”）
@@ -44,8 +55,94 @@ export class DataManager extends Component {
     if (!localStorage.getItem(TABLES.ORDER)) {
       localStorage.setItem(TABLES.ORDER, JSON.stringify([]));
     }
-  }
+    // 4. 初始化评论表（空表）
+    if (!localStorage.getItem(TABLES.REVIEW)) {
+    localStorage.setItem(TABLES.REVIEW, JSON.stringify([]));
+    }
 
+    if (!localStorage.getItem(TABLES.QUALIFICATION)) {
+    localStorage.setItem(TABLES.QUALIFICATION, JSON.stringify([]));
+  }
+     if (!localStorage.getItem(TABLES.PRIVATE_SERVICE)) {
+    localStorage.setItem(TABLES.PRIVATE_SERVICE, JSON.stringify([]));
+  }
+  }// 新增评价相关方法
+// 服务相关方法
+public publishService(service: {
+  id: string;
+  chefId: string;
+  title: string;
+  description: string;
+  price: number;
+  menu: { name: string; price: number }[];
+  date: string; // 可服务日期
+  status: "active" | "inactive";
+}) {
+  const services = this.getTableAllData(TABLES.PRIVATE_SERVICE);
+  services.push(service);
+  localStorage.setItem(TABLES.PRIVATE_SERVICE, JSON.stringify(services));
+}
+
+public getChefServices(chefId: string) {
+  return this.getTableAllData(TABLES.PRIVATE_SERVICE).filter(s => s.chefId === chefId);
+}
+// 资质相关方法
+public submitQualification(chefId: string, info: {
+  realName: string;
+  idCard: string;
+  certificate: string; // 证书图片路径
+}) {
+  const quals = this.getTableAllData(TABLES.QUALIFICATION);
+  quals.push({
+    id: `qual_${Date.now()}`,
+    chefId,
+    ...info,
+    status: "pending", // pending/approved/rejected
+    auditTime: null,
+    auditorId: null
+  });
+  localStorage.setItem(TABLES.QUALIFICATION, JSON.stringify(quals));
+}
+
+public getChefQualification(chefId: string) {
+  return this.getTableAllData(TABLES.QUALIFICATION).find(q => q.chefId === chefId);
+}
+
+public getPendingQualifications() {
+  return this.getTableAllData(TABLES.QUALIFICATION).filter(q => q.status === "pending");
+}
+
+public auditQualification(qualId: string, status: "approved" | "rejected", auditorId: string) {
+  return this.updateData(TABLES.QUALIFICATION, qualId, {
+    status,
+    auditTime: new Date().toLocaleString(),
+    auditorId
+  });
+}
+  /** 添加订单评价 */
+  // 评价相关方法
+public addReview(review: {
+  id: string;
+  orderId: string;
+  userId: string;
+  content: string;
+  score: number;
+  createTime: string;
+}) {
+  const reviews = this.getTableAllData(TABLES.REVIEW);
+  reviews.push(review);
+  localStorage.setItem(TABLES.REVIEW, JSON.stringify(reviews));
+}
+
+public getReviewByOrderId(orderId: string) {
+  return this.getTableAllData(TABLES.REVIEW).find(r => r.orderId === orderId);
+}
+
+public getCompletedOrdersByUserId(userId: string) {
+  return this.getTableAllData(TABLES.ORDER)
+    .filter(o => o.userId === userId && o.status === "已完成")
+    .filter(o => !this.getReviewByOrderId(o.id)); // 过滤已评价订单
+}
   // ---------------------- 通用CRUD方法（模拟概要设计“数据持久层”操作） ----------------------
   // 1. 获取表中所有数据
   public getTableAllData(tableName: string): any[] {
@@ -126,4 +223,30 @@ export class DataManager extends Component {
       );
     }
   }
+
+
+  // 统计方法
+public getStats() {
+  const users = this.getTableAllData(TABLES.USER);
+  const orders = this.getTableAllData(TABLES.ORDER);
+  const dishes = this.getTableAllData(TABLES.DISH);
+  
+  return {
+    userStats: {
+      total: users.length,
+      diner: users.filter(u => u.role === "diner").length,
+      chef: users.filter(u => u.role === "chef").length,
+      admin: users.filter(u => u.role === "admin").length
+    },
+    orderStats: {
+      total: orders.length,
+      completed: orders.filter(o => o.status === "已完成").length,
+      revenue: orders.reduce((sum, o) => sum + o.totalPrice, 0)
+    },
+    dishStats: {
+      total: dishes.length,
+      categories: [...new Set(dishes.map(d => d.category))].length
+    }
+  };
+}
 }

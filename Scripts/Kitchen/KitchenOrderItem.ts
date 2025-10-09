@@ -9,6 +9,7 @@ export class KitchenOrderItem extends Component {
   @property(Label) statusLabel: Label = null;     // 订单状态标签
   @property(Button) acceptBtn: Button = null;     // 接单按钮
   @property(Button) completeBtn: Button = null;   // 完成按钮
+  @property(Button) rejectBtn: Button = null; // 拒绝按钮
 
   private orderData: any = null; // 订单数据
   private statusUpdateCallback: (orderId: string, newStatus: string) => void = null; // 状态更新回调
@@ -33,16 +34,18 @@ export class KitchenOrderItem extends Component {
 
   // 根据角色更新按钮显示（食客隐藏，厨师显示）
   private updateBtnVisibility() {
-    const isChef = this.currentUser.role === "chef"; // 是否为厨师
-    // 食客：隐藏所有操作按钮；厨师：按订单状态显示按钮
-    if (isChef) {
-      this.acceptBtn.node.active = this.orderData.status === "已支付";
-      this.completeBtn.node.active = this.orderData.status === "已接单";
-    } else {
-      this.acceptBtn.node.active = false; // 食客隐藏接单按钮
-      this.completeBtn.node.active = false; // 食客隐藏完成按钮
-    }
+  const isChef = this.currentUser.role === "chef";
+  if (isChef) {
+    this.acceptBtn.node.active = this.orderData.status === "已支付";
+    this.completeBtn.node.active = this.orderData.status === "已接单";
+    this.rejectBtn.node.active = this.orderData.status === "已支付"; // 新增拒绝按钮显示逻辑
+  } else {
+    // 隐藏所有按钮
+    this.acceptBtn.node.active = false;
+    this.completeBtn.node.active = false;
+    this.rejectBtn.node.active = false;
   }
+}
 
   // 接单/完成按钮点击事件（不变）
   onAcceptBtnClick() {
@@ -50,5 +53,10 @@ export class KitchenOrderItem extends Component {
   }
   onCompleteBtnClick() {
     this.statusUpdateCallback(this.orderData.id, "已完成");
+  }
+
+  // 新增拒绝按钮事件
+  onRejectBtnClick() {
+    this.statusUpdateCallback(this.orderData.id, "已拒绝");
   }
 }

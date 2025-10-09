@@ -9,7 +9,8 @@ export class KitchenScene extends Component {
   @property(Node) orderListContainer: Node = null; // 后厨订单列表容器
   @property(Prefab) kitchenOrderItemPrefab: Prefab = null; // 后厨订单项预制体
   @property(Button) refreshBtn: Button = null; // 刷新订单按钮
-
+  @property(Button) getcertibtn: Button = null; // 提交资质按钮
+  @property(Button) pushservicebtn: Button = null; // 发布服务按钮
   private dataMgr: DataManager = DataManager.getInstance();
 
   // 生命周期：场景加载时初始化
@@ -39,7 +40,11 @@ loadAndRenderKitchenOrders() {
     return;
   }
   const currentUser = JSON.parse(userStr);
-
+  if(currentUser.role != "chef")
+  {
+    this.getcertibtn.node.active = false;
+    this.pushservicebtn.node.active = false;
+  }
   // 按角色获取订单（食客仅看自己的，厨师看所有）
   const kitchenOrders = this.dataMgr.getOrdersByUserRole(currentUser);
 
@@ -59,5 +64,13 @@ loadAndRenderKitchenOrders() {
   // 返回菜品页按钮点击事件
   onBackToDishBtnClick() {
     SceneManager.loadScene("DishListScene");
+  }
+
+  ongetcertibtnClick() {
+    SceneManager.loadScene("ChefQualificationScene");
+  }
+
+  onpushservicebtnClick() {
+    SceneManager.loadScene("ChefServiceEditScene");
   }
 }
